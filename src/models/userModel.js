@@ -11,7 +11,7 @@ class Users {
     return rows[0];
   }
   static async findById(id) {
-    const sql = "select id, name, email, created_at from users where id=?;";
+    const sql = "select id, name, email,role,created_at from users where id=?;";
     const [rows] = await db.execute(sql, id);
     return rows[0];
   }
