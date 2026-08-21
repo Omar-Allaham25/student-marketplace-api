@@ -1,5 +1,7 @@
 import { Server as HttpServer } from "http";
 import { Server, Socket } from "socket.io";
+import { updateMessageReadStatus } from "./models/messageModel";
+import { AppError } from "./utils/appError";
 
 let io: Server;
 
@@ -25,6 +27,20 @@ export const initSocket = (httpServer: HttpServer) => {
       console.log(
         `Socket ${socket.id} joined conversation room: chat_${conversationId}`,
       );
+      socket.on(
+        "read_message",
+        async (data: { conversationId: string; messageIds: string[] }) => {
+          try {
+            await updateMessageReadStatus(data.conversationId, data.messageIds);
+            io.to(`chat_${data.conversationId}`).emit("messages_read_receipt", {
+              messageIds: data.messageIds,
+              conversationId: data.conversationId,
+            });
+          } catch (err) {
+            return new AppError("Failed to update message read status", 500);
+          }
+        },
+      );
     });
     socket.on("leave_conversation", (conversationId: string) => {
       socket.leave(`chat_${conversationId}`);
@@ -39,8 +55,9 @@ export const initSocket = (httpServer: HttpServer) => {
   });
 };
 
-export const getIO = (): Server => {
+export const getIo = (): Server => {
   if (!io) {
     throw new Error("Socket.io not initialized");
-  } return io;
-}    
+  }
+  return io;
+};

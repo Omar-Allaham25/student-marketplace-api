@@ -45,6 +45,9 @@ export const createMessage = async (
       conversationId: conversation.id,
       senderID: senderId,
     },
+    include: {
+      conversation: true,
+    },
   });
 };
 export const deleteMessage = async (messageId: string, userId: string) => {
@@ -127,4 +130,13 @@ const formatMessages = (messages: Message[]) => {
   return messages.map((msg) =>
     msg.isDeleted ? { ...msg, content: "This message was deleted" } : msg,
   );
+};
+ export const updateMessageReadStatus = async (
+  conversationId: string,
+  messagesIds: string[],
+) => {
+  return await prisma.message.updateMany({
+    data: { isRead: true },
+    where: { conversationId: conversationId, id: { in: messagesIds } },
+  });
 };

@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from "express";
+import { getIo } from "../socket";
 import {
   createMessage,
   deleteMessage as deleteMessageServices,
@@ -7,6 +8,7 @@ import {
   getConversationMessages as getConversationMessagesServices,
 } from "../models/messageModel";
 import { AppError } from "../utils/appError";
+const io = getIo();
 
 export const sendMessage = async (
   req: Request,
@@ -18,6 +20,16 @@ export const sendMessage = async (
     const senderId = req.user?.userId;
     if (!senderId) throw new AppError("user id not provided", 400);
     const message = await createMessage(senderId, content, listingId);
+    io.to(`chat_${message.conversationId}`).emit("new_message", message);
+    const receverId =
+      message.conversation.sellerId === senderId
+        ? message.conversation.buyerId
+        : message.conversation.sellerId;
+    io.to(`user_${receverId}`).emit("inbox_notification", {
+      conversationId: message.conversationId,
+      unreadCount: 1,
+      latestMessage: message,
+    });
     res.status(201).json({
       status: "success",
       data: message,
@@ -36,7 +48,11 @@ export const deleteMessage = async (
     const id = req.params.messageId as string;
     const userId = req.user?.userId;
     if (!userId) throw new AppError("user id not provided", 400);
-    await deleteMessageServices(id, userId);
+    const deletedMessage = await deleteMessageServices(id, userId);
+    io.to(`chat_${deletedMessage.conversationId}`).emit("message_deleted", {
+      messageId: deletedMessage.id,
+      conversationId: deletedMessage.conversationId,
+    });
     res.status(200).json({
       status: "success",
       message: "Message deleted",
