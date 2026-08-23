@@ -15,6 +15,7 @@ app.use(express.json());
 app.use("/api/user",userRouter);
 app.use("/api/category",categoryRouter);
 app.use("/api/listings",listingRouter);
+app.use("/api/favorites", favoriteRouter);
 
 app.use(handlerError);
 
