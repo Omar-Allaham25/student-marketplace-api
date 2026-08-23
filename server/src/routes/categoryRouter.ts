@@ -5,9 +5,10 @@ import { validate } from "../middleware/validation";
 import { createCategorySchema, updateCategorySchema } from "../validators/categoryValidator";
 
 const router = Router();
-router.get("/getAll", protect, getAll);
-router.post("/create", protect, restrictTo, validate(createCategorySchema), CreateCategory);
-router.patch("/modify/:id",protect,restrictTo,validate(updateCategorySchema),editCategory);
-router.delete("/delete/:id", protect, restrictTo, deleteCategory);
+router.use(protect);
+router.get("/getAll", getAll);
+router.post("/create", restrictTo, validate(createCategorySchema), CreateCategory);
+router.patch("/modify/:id", restrictTo, validate(updateCategorySchema), editCategory);
+router.delete("/delete/:id", restrictTo, deleteCategory);
 
 export default router;

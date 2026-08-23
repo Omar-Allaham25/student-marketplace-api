@@ -7,10 +7,11 @@ import { getUserInbox } from "../models/messageModel";
 
 
 const router = Router();
+router.use(protect);
 
-router.get("/conversation/:listingId",protect,checkConversation);
-router.post("/send",protect,validate(createMessageSchema), sendMessage);
-router.delete("/delete/:messageId", protect,validate(deleteMessageSchema), deleteMessage);
+router.get("/conversation/:listingId",checkConversation);
+router.post("/send",validate(createMessageSchema), sendMessage);
+router.delete("/delete/:messageId",validate(deleteMessageSchema), deleteMessage);
 
-router.get("/inbox", protect,getUserInbox);
-router.get("/conversation/:conversationId", protect, validate(getConversationMessagesSchema), getConversationMessages);
+router.get("/inbox", getUserInbox);
+router.get("/conversation/:conversationId", validate(getConversationMessagesSchema), getConversationMessages);

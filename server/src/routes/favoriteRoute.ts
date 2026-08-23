@@ -5,9 +5,10 @@ import {
   toggleFavorite,
 } from "../controllers/favoriteController";
 
-const favoriteRouter = Router();
+const router = Router();
+router.use(protect);
 
-favoriteRouter.get("/getFavorites", protect, getFavorites);
-favoriteRouter.post("/toggleFavorite/:listingId", protect, toggleFavorite);
+router.get("/getFavorites", getFavorites);
+router.post("/toggleFavorite/:listingId", toggleFavorite);
 
-export default favoriteRouter;
+export default router;

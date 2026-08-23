@@ -11,10 +11,11 @@ import { loginSchema, registerSchema } from "../validators/userValidator";
 import { validate } from "../middleware/validation";
 
 const router = Router();
-router.get("/", protect,restrictTo, getAllUsers);
+router.use(protect);
+router.get("/", restrictTo, getAllUsers);
 router.post("/register", validate(registerSchema), register);
 router.post("/login", validate(loginSchema), login);
-router.get("/me", protect, getMe);
-router.delete("/delete/:id", protect, restrictTo, deleteUser);
+router.get("/me", getMe);
+router.delete("/delete/:id", restrictTo, deleteUser);
 
 export default router;
