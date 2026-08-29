@@ -17,16 +17,31 @@ export const getAllListings = async (
   try {
     const { search, minPrice, maxPrice, condition, categoryId } = req.query;
     let filters: any = {};
+    const { page, limit } = req.query;
+    const pageNumber = Number(page) || 1;
+    const limitNumber = Number(limit) || 10;
+
     if (search) filters.search = search as string;
     if (minPrice) filters.minPrice = Number(minPrice);
     if (maxPrice) filters.maxPrice = Number(maxPrice);
     if (condition) filters.condition = condition as string;
     if (categoryId) filters.categoryId = categoryId as string;
-    const allProducts = await getAll(filters as Record<string, any>);
+    const { totalCount, listings } = await getAll(
+      pageNumber,
+      limitNumber,
+      filters as Record<string, any>,
+    );
+    const totalPages = Math.ceil(totalCount / limitNumber);
     res.status(200).json({
       status: "success",
-      numberOfProducts: allProducts.length,
-      listings: allProducts,
+      resultLength: listings.length,
+      pagination: {
+        totalItems: totalCount,
+        currentPage: pageNumber,
+        totalPages: totalPages,
+        limit: limitNumber,
+      },
+      data: listings,
     });
   } catch (err) {
     next(new AppError(err.message || "Internal server error", 500));

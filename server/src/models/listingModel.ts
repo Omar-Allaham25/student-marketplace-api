@@ -2,8 +2,13 @@ import prisma from "../lib/prisma";
 import { Condition } from "@prisma/client";
 import { findUserById } from "./UserModel";
 
-export const getAll = async (filters?: Record<string, any>) => {
+export const getAll = async (
+  page: number,
+  limit: number,
+  filters?: Record<string, any>,
+) => {
   try {
+    const skip = (page - 1) * limit;
     const whereClause: Record<string, any> = {};
     if (filters) {
       if (filters.search) {
@@ -21,21 +26,27 @@ export const getAll = async (filters?: Record<string, any>) => {
       if (filters.categoryId) whereClause.categoryId = filters.categoryId;
       if (filters.userId) whereClause.userId = filters.userId;
     }
-    const allListings = await prisma.listing.findMany({
-      where: whereClause,
-      orderBy: { createdAt: "desc" },
-      include: {
-        category: true,
-        images: true,
-        user: {
-          select: {
-            id: true,
-            name: true,
+
+    const [totalCount, listings] = await prisma.$transaction([
+      prisma.listing.count({ where: whereClause }),
+      prisma.listing.findMany({
+        where: whereClause,
+        orderBy: { createdAt: "desc" },
+        include: {
+          category: true,
+          images: true,
+          user: {
+            select: {
+              id: true,
+              name: true,
+            },
           },
         },
-      },
-    });
-    return allListings;
+        skip: skip,
+        take: limit,
+      }),
+    ]);
+    return {totalCount, listings};
   } catch (err) {
     throw new Error("Error fetching listings: " + err.message);
   }
