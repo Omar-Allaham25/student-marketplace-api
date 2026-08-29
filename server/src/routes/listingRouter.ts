@@ -34,6 +34,6 @@ router.patch(
   validate(updateListingSchema),
   updateListing,
 );
-router.delete("/deleteListing/:id", protect, deleteListing);
+router.delete("/deleteListing/:id", deleteListing);
 
 export default router;

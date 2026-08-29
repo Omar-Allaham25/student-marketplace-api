@@ -14,7 +14,6 @@ export const initSocket = (httpServer: HttpServer) => {
       methods: ["GET", "POST"],
     },
   });
-
   io.use((socket, next) => {
     try {
       const token = socket.handshake.auth.token;

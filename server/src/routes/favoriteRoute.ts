@@ -9,6 +9,6 @@ const router = Router();
 router.use(protect);
 
 router.get("/getFavorites", getFavorites);
-router.post("/toggleFavorite/:listingId", toggleFavorite);
+router.post("/toggleFavorites/:listingId", toggleFavorite);
 
 export default router;

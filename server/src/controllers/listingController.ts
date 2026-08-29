@@ -7,6 +7,7 @@ import {
   removeListing,
 } from "../models/listingModel";
 import { AppError } from "../utils/appError";
+import { uploadImageToCloundinary } from "../models/cloudinaryModel";
 
 export const getAllListings = async (
   req: Request,
@@ -28,7 +29,7 @@ export const getAllListings = async (
       listings: allProducts,
     });
   } catch (err) {
-    next(new AppError(`${err.message} || "Internal server error"`, 500));
+    next(new AppError(err.message || "Internal server error", 500));
   }
 };
 export const getListing = async (
@@ -52,7 +53,7 @@ export const getListing = async (
   } catch (err) {
     next(
       new AppError(
-        `${err.meassage} || "there is something wrong please try  later!"`,
+        err.message || "there is something wrong please try  later!",
         500,
       ),
     );
@@ -67,8 +68,10 @@ export const createNewListing = async (
     let { categoryId, title, description, price, condition } = req.body;
     price = Number(price);
     const userId = req.user?.userId;
-    const images = req.files as Express.Multer.File[];
-    const imagesUrls = images.map((file) => `uploads/${file.filename}`);
+    const files = req.files as Express.Multer.File[];
+    const imagesUrls = await Promise.all(
+      files.map((file) => uploadImageToCloundinary(file.buffer)),
+    );
     const newListing = await createListing(
       userId as string,
       categoryId,
@@ -83,7 +86,12 @@ export const createNewListing = async (
       data: newListing,
     });
   } catch (err) {
-    next(` ${err.message} || "there is something wrong in server side "`, 500);
+    next(
+      new AppError(
+        err.message || "there is something wrong in server side ",
+        500,
+      ),
+    );
   }
 };
 export const updateListing = async (
@@ -104,7 +112,9 @@ export const updateListing = async (
     if (price !== undefined) price = Number(price);
     const userId = req.user?.userId as string;
     const files = req.files as Express.Multer.File[];
-    const imagesUrls = files.map((file) => `uploads/${file.filename}`);
+    const imagesUrls = await Promise.all(
+      files.map((file) => uploadImageToCloundinary(file.buffer)),
+    );
     const data = { title, description, price, condition, status, categoryId };
     const imagedata = imagesUrls.length > 0 ? imagesUrls : undefined;
     const updatedListing = await modifyListing(
@@ -119,7 +129,7 @@ export const updateListing = async (
       data: updatedListing,
     });
   } catch (err) {
-    next(new AppError(`${err.message}|| Internal Error `, 500));
+    return next(new AppError(err.message || "Internal Error", 500));
   }
 };
 export const deleteListing = async (
@@ -142,7 +152,9 @@ export const deleteListing = async (
       message: "product deleted succesfully",
     });
   } catch (err) {
-    next(new AppError(`${err.message} || there is problem from server`, 500));
+    return next(
+      new AppError(err.message || "there is problem from server", 500),
+    );
   }
 };
 export const getListingsByUserId = async (
@@ -164,7 +176,7 @@ export const getListingsByUserId = async (
     });
   } catch (err) {
     next(
-      new AppError(`${err.message}|| there is something wrong in server`, 500),
+      new AppError(err.message || "there is something wrong in server", 500),
     );
   }
 };
