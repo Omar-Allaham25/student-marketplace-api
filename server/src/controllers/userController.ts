@@ -66,12 +66,20 @@ export const login = async (
     }
     const token = createToken(user.id, user.name, user.role);
     const { password: _, ...userWithoutPassword } = user;
-    return res.status(200).json({
-      status: "success",
-      message: "User logged in successfully",
-      user: userWithoutPassword,
-      token,
-    });
+    return res
+      .status(200)
+      .cookie("Token", token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        maxAge: 15 * 60 * 1000,
+      })
+      .json({
+        status: "success",
+        message: "User logged in successfully",
+        user: userWithoutPassword,
+      });
   } catch (err) {
     next(
       new AppError(
