@@ -38,6 +38,8 @@ model User{
   avatarUrl String? 
   createdAt DateTime @default(now())
   updateAt DateTime @updatedAt
+  verifyToken String? @unique
+  verifyTokenExpiry DateTime? 
   listings Listing[]
   favorites Favorite[]
   messageSent  Message[]
@@ -88,7 +90,7 @@ buyerId String
 sellerId String
 listingId String
 createdAt DateTime @default(now())
-
+UpdatedAt DateTime @updatedAt
 buyer User @relation("BuyerConversations",fields: [buyerId],references: [id])
 seller User @relation("SellerConversations",fields: [sellerId],references: [id])
 listing Listing @relation(fields: [listingId],references: [id],onDelete: Cascade)

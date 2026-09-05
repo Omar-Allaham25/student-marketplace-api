@@ -39,7 +39,8 @@ export const createMessage = async (
       },
     });
   }
-  return await prisma.message.create({
+  const [newMessage,lastUpdate]=await prisma.$transaction([
+  prisma.message.create({
     data: {
       content,
       conversationId: conversation.id,
@@ -48,7 +49,13 @@ export const createMessage = async (
     include: {
       conversation: true,
     },
-  });
+  }),
+  prisma.conversation.update({
+    where: { id: conversation.id },
+    data: { UpdatedAt: new Date() },
+  }),
+  ]);
+  return newMessage;
 };
 export const deleteMessage = async (messageId: string, userId: string) => {
   const message = await prisma.message.findUnique({
