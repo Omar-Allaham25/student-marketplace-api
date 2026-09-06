@@ -6,6 +6,8 @@ import {
   deleteUserById,
   findAllUsers,
 } from "../models/UserModel";
+import { generateVerifyToken } from "../utils/createVerifyToken";
+import {sendVerificationEmail} from "../utils/email";
 import jwt, { SignOptions } from "jsonwebtoken";
 import { Role } from "@prisma/client";
 import bcrypt from "bcrypt";
@@ -27,7 +29,11 @@ export const register = async (
 ) => {
   try {
     const { name, email, password } = req.body;
-    const newUser = await registerUser(name, email, password);
+    const { token: verifgyToken, expiryDate } = await generateVerifyToken();
+    const newUser = await registerUser(name, email, password,verifgyToken, expiryDate);
+    const verificationUrl = `${process.env.BASE_URL}/verify-email?token=${verifgyToken}`;
+    console.log("verificationUrl", verificationUrl);
+    await sendVerificationEmail(email, verificationUrl);
     if (!newUser) next(new AppError("User registration failed", 400));
     return res.status(200).json({
       status: "success",
@@ -37,7 +43,7 @@ export const register = async (
   } catch (err) {
     next(
       new AppError(
-        `${err.message} || "there is something wrong please try again!"`,
+        err.message || "there is something wrong please try again!",
         500,
       ),
     );
@@ -83,7 +89,7 @@ export const login = async (
   } catch (err) {
     next(
       new AppError(
-        `${err.message} || "there is something wrong please try again!"`,
+        err.message || "there is something wrong please try again!",
         500,
       ),
     );
@@ -110,7 +116,7 @@ export const getMe = async (
   } catch (err) {
     next(
       new AppError(
-        ` ${err.message} || "there is something wrong please try again!"`,
+        err.message || "there is something wrong please try again!",
         500,
       ),
     );
@@ -131,7 +137,7 @@ export const getAllUsers = async (
   } catch (err) {
     next(
       new AppError(
-        `${err.message} || "there is something wrong please try again!"`,
+        err.message || "there is something wrong please try again!",
         500,
       ),
     );
@@ -152,7 +158,7 @@ export const deleteUser = async (
   } catch (err) {
     next(
       new AppError(
-        `${err.message} || "there is something wrong please try again!"`,
+        err.message || "there is something wrong please try again!",
         500,
       ),
     );

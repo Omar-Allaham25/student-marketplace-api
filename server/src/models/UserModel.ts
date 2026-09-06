@@ -22,6 +22,8 @@ export const registerUser = async (
   name: string,
   email: string,
   password: string,
+  verifgyToken: string,
+  expiryDate: Date,
 ) => {
   try {
     const existingUser = await findUserByEmail(email);
@@ -35,7 +37,8 @@ export const registerUser = async (
         name,
         email,
         password: hashPassword,
-        isVerifide: process.env.NODE_ENV === "development" ? true : false,
+        verifyToken: verifgyToken,
+        verifyTokenExpiry: expiryDate,
       },
     });
     const { password: _, ...userWithoutPassword } = newUser;
