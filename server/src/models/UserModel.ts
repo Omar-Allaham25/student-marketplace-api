@@ -1,5 +1,6 @@
 import prisma from "../lib/prisma";
 import bcrypt from "bcrypt";
+import { AppError } from "../utils/appError";
 
 const findUserByEmail = async (email: string) => {
   const user = await prisma.user.findUnique({ where: { email } });
@@ -22,7 +23,7 @@ export const registerUser = async (
   name: string,
   email: string,
   password: string,
-  verifgyToken: string,
+  verifyToken: string,
   expiryDate: Date,
 ) => {
   try {
@@ -37,11 +38,16 @@ export const registerUser = async (
         name,
         email,
         password: hashPassword,
-        verifyToken: verifgyToken,
+        verifyToken: verifyToken,
         verifyTokenExpiry: expiryDate,
       },
     });
-    const { password: _, ...userWithoutPassword } = newUser;
+    const {
+      password: _password,
+      verifyToken: _verifyToken,
+      verifyTokenExpiry: _verifyTokenExpiry,
+      ...userWithoutPassword
+    } = newUser;
     return userWithoutPassword;
   } catch (err) {
     throw new Error(
@@ -97,6 +103,25 @@ export const findAllUsers = async () => {
   } catch (err) {
     throw new Error(
       "there is something wrong in get all users please try again!",
+    );
+  }
+};
+export const saveVerificationToken = async (
+  userId: string,
+  verifyToken: string,
+  expiryDate: Date,
+) => {
+  try {
+    const updatedUSer=await prisma.user.update({
+      where:{id:userId},
+      data:{
+        verifyToken:verifyToken,
+        verifyTokenExpiry:expiryDate
+      }
+    })
+  } catch (err) {
+    throw new Error(
+      err.message || "there is something wrong please try again!",
     );
   }
 };

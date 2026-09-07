@@ -5,9 +5,10 @@ import {
   findUserById,
   deleteUserById,
   findAllUsers,
+  saveVerificationToken,
 } from "../models/UserModel";
 import { generateVerifyToken } from "../utils/createVerifyToken";
-import {sendVerificationEmail} from "../utils/email";
+import { sendVerificationEmail } from "../utils/email";
 import jwt, { SignOptions } from "jsonwebtoken";
 import { Role } from "@prisma/client";
 import bcrypt from "bcrypt";
@@ -30,18 +31,24 @@ export const register = async (
   try {
     const { name, email, password } = req.body;
     const { token: verifgyToken, expiryDate } = await generateVerifyToken();
-    const newUser = await registerUser(name, email, password,verifgyToken, expiryDate);
+    const newUser = await registerUser(
+      name,
+      email,
+      password,
+      verifgyToken,
+      expiryDate,
+    );
     const verificationUrl = `${process.env.BASE_URL}/verify-email?token=${verifgyToken}`;
     console.log("verificationUrl", verificationUrl);
     await sendVerificationEmail(email, verificationUrl);
-    if (!newUser) next(new AppError("User registration failed", 400));
-    return res.status(200).json({
+    if (!newUser) return next(new AppError("User registration failed", 400));
+    return res.status(201).json({
       status: "success",
       message: "User registered successfully. Please verify your student email",
       User: newUser,
     });
   } catch (err) {
-    next(
+    return next(
       new AppError(
         err.message || "there is something wrong please try again!",
         500,
@@ -58,20 +65,36 @@ export const login = async (
   try {
     const { email, password } = req.body;
     const user = await loginUser(email, password);
-    if (!user.isActive) {
-      next(new AppError("Your account is deactivated", 401));
+    if(!user){
+      return next(new AppError("Invalid email or password", 401));
     }
-    if (!user.isVerifide) {
-      next(
-        new AppError("Please verify your student email before logging in", 401),
-      );
+    if (!user.isActive) {
+      return next(new AppError("Your account is deactivated", 401));
     }
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
-      next(new AppError("Invalid email or password", 401));
+      return next(new AppError("Invalid email or password", 401));
+    }
+    if (!user.isVerifide) {
+      const { token: verifyToken, expiryDate } = await generateVerifyToken();
+      await saveVerificationToken(user.id, verifyToken, expiryDate);
+      const verificationUrl = `${process.env.BASE_URL}/verify-email?token=${verifyToken}`;
+
+      await sendVerificationEmail(email, verificationUrl);
+      return next(
+        new AppError(
+          "Please verify your student email before logging in, we send to you verify email again ",
+          401,
+        ),
+      );
     }
     const token = createToken(user.id, user.name, user.role);
-    const { password: _, ...userWithoutPassword } = user;
+    const {
+      password: _password,
+      verifyToken: _verifyToken,
+      verifyTokenExpiry: _verifyTokenExpiry,
+      ...userWithoutPassword
+    } = user;
     return res
       .status(200)
       .cookie("Token", token, {
@@ -87,7 +110,7 @@ export const login = async (
         user: userWithoutPassword,
       });
   } catch (err) {
-    next(
+    return next(
       new AppError(
         err.message || "there is something wrong please try again!",
         500,
@@ -103,18 +126,18 @@ export const getMe = async (
   try {
     const userId = req.user?.userId;
     if (!userId) {
-      next(new AppError("Unauthorized", 401));
+      return next(new AppError("Unauthorized", 401));
     }
     const user = await findUserById(userId as string);
     if (!user) {
-      next(new AppError("User not found", 404));
+      return next(new AppError("User not found", 404));
     }
     return res.status(200).json({
       status: "success",
       user: user,
     });
   } catch (err) {
-    next(
+    return next(
       new AppError(
         err.message || "there is something wrong please try again!",
         500,
@@ -135,7 +158,7 @@ export const getAllUsers = async (
       users,
     });
   } catch (err) {
-    next(
+    return next(
       new AppError(
         err.message || "there is something wrong please try again!",
         500,
@@ -156,7 +179,7 @@ export const deleteUser = async (
       message: "User deleted successfully",
     });
   } catch (err) {
-    next(
+    return next(
       new AppError(
         err.message || "there is something wrong please try again!",
         500,
