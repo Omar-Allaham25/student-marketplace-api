@@ -33,7 +33,7 @@ model User{
   email String @unique 
   password  String 
   role  Role @default(student)
-  isVerifide Boolean @default(false)
+  isVerified Boolean @default(false)
   isActive  Boolean @default(true)
   avatarUrl String? 
   createdAt DateTime @default(now())

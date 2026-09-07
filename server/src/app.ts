@@ -4,6 +4,7 @@ import userRouter from "./routes/userRouter";
 import categoryRouter from "./routes/categoryRouter";
 import listingRouter from "./routes/listingRouter";
 import favoriteRouter from "./routes/favoriteRoute";
+import authRouter from "./routes/authRouter";
 import { handlerError } from "./middleware/errorHandler";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
@@ -29,6 +30,7 @@ app.use(
   }),
 );
 app.use(express.json());
+app.use("/api/auth", authRouter);
 app.use("/api/user", userRouter);
 app.use("/api/category", categoryRouter);
 app.use("/api/listings", listingRouter);

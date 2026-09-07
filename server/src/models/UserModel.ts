@@ -93,7 +93,7 @@ export const findAllUsers = async () => {
         email: true,
         role: true,
         isActive: true,
-        isVerifide: true,
+        isVerified: true,
       },
     });
     if (!users) {
@@ -112,13 +112,43 @@ export const saveVerificationToken = async (
   expiryDate: Date,
 ) => {
   try {
-    const updatedUSer=await prisma.user.update({
-      where:{id:userId},
-      data:{
-        verifyToken:verifyToken,
-        verifyTokenExpiry:expiryDate
-      }
-    })
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        verifyToken: verifyToken,
+        verifyTokenExpiry: expiryDate,
+      },
+    });
+  } catch (err) {
+    throw new Error(
+      err.message || "there is something wrong please try again!",
+    );
+  }
+};
+export const verifyUserByToken = async (token: string) => {
+  try {
+    const user = await prisma.user.findFirst({
+      where: {
+        verifyToken: token,
+        verifyTokenExpiry: {
+          gte: new Date(),
+        },
+      },
+    });
+    return user;
+  } catch (err) {
+    throw new Error(
+      err.message || "there is something wrong please try again!",
+    );
+  }
+};
+export const updateUserVerificationStatus = async (userId: string) => {
+  try {
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: { isVerified: true, verifyToken: null, verifyTokenExpiry: null },
+    });
+    return updatedUser;
   } catch (err) {
     throw new Error(
       err.message || "there is something wrong please try again!",

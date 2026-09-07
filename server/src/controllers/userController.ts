@@ -6,6 +6,8 @@ import {
   deleteUserById,
   findAllUsers,
   saveVerificationToken,
+  verifyUserByToken,
+  updateUserVerificationStatus,
 } from "../models/UserModel";
 import { generateVerifyToken } from "../utils/createVerifyToken";
 import { sendVerificationEmail } from "../utils/email";
@@ -38,7 +40,7 @@ export const register = async (
       verifgyToken,
       expiryDate,
     );
-    const verificationUrl = `${process.env.BASE_URL}/verify-email?token=${verifgyToken}`;
+    const verificationUrl = `${process.env.BASE_URL}/auth/verify-email/${verifgyToken}`;
     console.log("verificationUrl", verificationUrl);
     await sendVerificationEmail(email, verificationUrl);
     if (!newUser) return next(new AppError("User registration failed", 400));
@@ -65,7 +67,7 @@ export const login = async (
   try {
     const { email, password } = req.body;
     const user = await loginUser(email, password);
-    if(!user){
+    if (!user) {
       return next(new AppError("Invalid email or password", 401));
     }
     if (!user.isActive) {
@@ -75,10 +77,10 @@ export const login = async (
     if (!isPasswordValid) {
       return next(new AppError("Invalid email or password", 401));
     }
-    if (!user.isVerifide) {
+    if (!user.isVerified) {
       const { token: verifyToken, expiryDate } = await generateVerifyToken();
       await saveVerificationToken(user.id, verifyToken, expiryDate);
-      const verificationUrl = `${process.env.BASE_URL}/verify-email?token=${verifyToken}`;
+      const verificationUrl = `${process.env.BASE_URL}/auth/verify-email/${verifyToken}`;
 
       await sendVerificationEmail(email, verificationUrl);
       return next(
@@ -158,6 +160,7 @@ export const getAllUsers = async (
       users,
     });
   } catch (err) {
+    console.error(err);
     return next(
       new AppError(
         err.message || "there is something wrong please try again!",
@@ -177,6 +180,35 @@ export const deleteUser = async (
     res.status(200).json({
       status: "success",
       message: "User deleted successfully",
+    });
+  } catch (err) {
+    return next(
+      new AppError(
+        err.message || "there is something wrong please try again!",
+        500,
+      ),
+    );
+  }
+};
+
+export const verifyEmail = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { token } = req.params;
+    if (!token) {
+      return next(new AppError("Verification token is required", 400));
+    }
+    const user = await verifyUserByToken(token as string);
+    if (!user) {
+      return next(new AppError("Invalid or expired verification token", 400));
+    }
+    await updateUserVerificationStatus(user.id);
+    res.status(200).json({
+      status: "success",
+      message: "Email verified successfully",
     });
   } catch (err) {
     return next(
